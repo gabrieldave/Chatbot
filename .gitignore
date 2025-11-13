@@ -68,3 +68,18 @@ data/
 # Archivos de procesamiento
 libros procesados/
 
+# Reportes generados automáticamente
+ingestion_report_*.md
+*.report
+
+# Archivos de log y errores
+failed_files_log.json
+error_logs/
+
+# Archivos temporales de ingesta
+*.ingest
+*.processing
+
+# Cursor (opcional - descomentar si no quieres subirlo)
+# .cursor/
+
