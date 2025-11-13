@@ -141,7 +141,12 @@ if total_files == 0:
 print("\n4. Procesando archivos nuevos...")
 print("=" * 80)
 
-batch_size = 10  # Procesar en lotes de 10 archivos
+# Tamaño del batch: optimizado para Tier 3
+# Tier 3 límites: 5,000 RPM, 5,000,000 TPM, 100,000,000 TPD
+# Rango óptimo recomendado: 32-64 archivos por batch
+# Usando 50 como punto medio del rango óptimo
+# Con batch_size=50: ~5,000 requests/batch, ~2.5M tokens/batch (muy por debajo de límites)
+batch_size = 50  # Optimizado para Tier 3 - Rango óptimo 32-64, usando 50 como punto medio
 processed_count = 0
 failed_count = 0
 start_time = time.time()
@@ -157,11 +162,42 @@ for i in range(0, total_files, batch_size):
     try:
         # Cargar documentos del lote
         batch_start = time.time()
-        reader = SimpleDirectoryReader(input_files=batch)
-        documents = reader.load_data()
+        try:
+            # Intentar cargar todo el batch de una vez (más eficiente)
+            reader = SimpleDirectoryReader(input_files=batch)
+            documents = reader.load_data()
+            load_time = time.time() - batch_start
+            print(f"   ✓ Cargados {len(documents)} documentos en {load_time:.1f}s")
+        except Exception as batch_error:
+            # Si falla el batch completo, intentar archivo por archivo
+            print(f"   ⚠️  Error cargando batch completo, intentando archivo por archivo...")
+            all_documents = []
+            batch_failed_files = []
+            
+            for file_path in batch:
+                try:
+                    reader = SimpleDirectoryReader(input_files=[file_path])
+                    file_docs = reader.load_data()
+                    all_documents.extend(file_docs)
+                except Exception as file_error:
+                    file_name = os.path.basename(file_path)
+                    batch_failed_files.append(file_name)
+                    print(f"      ⚠️  Error al cargar {file_name}: {type(file_error).__name__}")
+                    failed_count += 1
+                    continue
+            
+            documents = all_documents
+            load_time = time.time() - batch_start
+            
+            if batch_failed_files:
+                print(f"   ⚠️  {len(batch_failed_files)} archivo(s) fallaron en este lote")
+            
+            print(f"   ✓ Cargados {len(documents)} documentos exitosamente en {load_time:.1f}s")
         
-        load_time = time.time() - batch_start
-        print(f"   ✓ Cargados {len(documents)} documentos en {load_time:.1f}s")
+        # Si no hay documentos para agregar (todos fallaron), continuar con el siguiente lote
+        if len(documents) == 0:
+            print(f"   ⏭️  No hay documentos para agregar en este lote, continuando...")
+            continue
         
         # Agregar documentos al índice
         if index is None:
@@ -201,7 +237,9 @@ for i in range(0, total_files, batch_size):
                 )
                 print("   ✓ Documentos agregados")
         
-        processed_count += len(batch)
+        # Contar solo los archivos exitosamente procesados (no los que fallaron)
+        successful_in_batch = len(batch) - len(batch_failed_files)
+        processed_count += successful_in_batch
         elapsed_time = time.time() - start_time
         progress = (processed_count / total_files) * 100
         rate = processed_count / elapsed_time if elapsed_time > 0 else 0
