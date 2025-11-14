@@ -3122,16 +3122,10 @@ if __name__ == "__main__":
                 if port > start_port + 10:  # Limitar búsqueda a 10 puertos
                     raise Exception(f"No se pudo encontrar un puerto disponible entre {start_port} y {start_port + 10}")
     
-    # Intentar usar el puerto 8000, si está ocupado buscar uno disponible
-    try:
-        port = 8000
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('0.0.0.0', port))
-        print(f"✓ Puerto {port} disponible")
-    except OSError:
-        print(f"⚠ Puerto 8000 está ocupado, buscando puerto alternativo...")
-        port = find_free_port(8000)
-        print(f"✓ Usando puerto alternativo: {port}")
+    # Railway y otras plataformas proporcionan PORT como variable de entorno
+    # Si no está disponible, usar 8000 por defecto (desarrollo local)
+    port = int(os.getenv("PORT", 8000))
+    print(f"✓ Iniciando servidor en puerto {port}")
     
     # Importar webhook de nuevo usuario (solución alternativa)
     try:
