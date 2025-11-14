@@ -1,0 +1,33 @@
+# 📋 Comandos para Subir a GitHub
+
+Copia y pega estos comandos en PowerShell (uno por uno):
+
+## 1. Verificar que estás en la carpeta correcta
+cd "C:\Users\dakyo\Documents\Proyectos de apps\MI_SAAS_BOT"
+
+## 2. Verificar estado
+git status
+
+## 3. Agregar todos los archivos
+git add .
+
+## 4. Hacer commit
+git commit -m "Initial commit: Codex Trader - Frontend y Backend completo"
+
+## 5. Crear repositorio en GitHub primero (ve a github.com y crea uno nuevo)
+
+## 6. Conectar con GitHub (reemplaza TU_USUARIO con tu usuario)
+git remote add origin https://github.com/TU_USUARIO/codex-trader.git
+
+## 7. Cambiar branch a main
+git branch -M main
+
+## 8. Subir código
+git push -u origin main
+
+---
+
+IMPORTANTE: 
+- Si GitHub te pide autenticación, usa un Personal Access Token (no tu contraseña)
+- Crea el token en: GitHub → Settings → Developer settings → Personal access tokens
+
