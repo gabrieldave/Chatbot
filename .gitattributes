@@ -1,0 +1,20 @@
+# Configurar manejo de line endings
+* text=auto
+
+# Archivos específicos que siempre deben usar LF
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.sql text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Archivos binarios
+*.pdf binary
+*.epub binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+

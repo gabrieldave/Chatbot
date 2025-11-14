@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+supabase
+litellm
+llama-index
+llama-index-vector-stores-supabase
+llama-index-embeddings-openai
+python-dotenv
+pypdf
+python-docx
