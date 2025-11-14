@@ -1,0 +1,72 @@
+import { NextResponse } from 'next/server'
+
+export const runtime = 'nodejs'
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json()
+    const messages = body.messages || []
+    const userMessage = messages[messages.length - 1]?.content || ''
+    
+    if (!userMessage) {
+      return NextResponse.json({ error: "No se proporcionó ningún mensaje" }, { status: 400 })
+    }
+    
+    const authHeader = req.headers.get('Authorization') || ''
+    let authToken = authHeader.replace('Bearer ', '').trim()
+    
+    if (!authToken && body.token) {
+      authToken = body.token
+    }
+    
+    if (!authToken) {
+      return NextResponse.json({ error: "No se proporcionó token de autenticación" }, { status: 401 })
+    }
+
+    // Obtener conversation_id y response_mode del body si existen
+    const conversationId = body.conversation_id || null
+    const responseMode = body.response_mode || 'fast'
+
+    const backendBaseUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const backendUrl = `${backendBaseUrl}/chat`
+    const response = await fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ 
+        query: userMessage,
+        conversation_id: conversationId,
+        response_mode: responseMode
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      if (response.status === 401) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+      }
+      if (response.status === 402) {
+        return NextResponse.json({ error: "Tokens agotados" }, { status: 402 })
+      }
+      return NextResponse.json({ error: errorText }, { status: response.status })
+    }
+
+    const data = await response.json()
+    const respuestaTexto = data.response || 'Sin respuesta'
+    
+    // Devolver respuesta simple sin streaming
+    return NextResponse.json({ 
+      message: respuestaTexto 
+    })
+  } catch (error) {
+    console.error('Error:', error)
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Error desconocido' 
+    }, { status: 500 })
+  }
+}
+
+
+
