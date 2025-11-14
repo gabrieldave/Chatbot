@@ -72,7 +72,7 @@ FRONTEND_URL = get_env("FRONTEND_URL") or "http://localhost:3000"
 
 # Verificar que las variables estén definidas
 # OPENAI_API_KEY o DEEPSEEK_API_KEY son opcionales (al menos una debe estar)
-# SUPABASE_DB_PASSWORD es opcional para el backend (solo se usa en ingesta)
+# SUPABASE_DB_PASSWORD es opcional para el backend (solo se usa en ingesta y RAG)
 has_ai_key = bool(OPENAI_API_KEY or DEEPSEEK_API_KEY)
 if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not has_ai_key:
     missing = []
@@ -85,6 +85,15 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not has_ai_key:
     raise ValueError(
         f"Faltan variables de entorno obligatorias: {', '.join(missing)}. "
         "Asegúrate de tenerlas configuradas en Railway."
+    )
+
+# Verificar si SUPABASE_DB_PASSWORD está configurado para RAG
+RAG_AVAILABLE = bool(SUPABASE_DB_PASSWORD)
+if not RAG_AVAILABLE:
+    logger.warning(
+        "SUPABASE_DB_PASSWORD no está configurado. "
+        "El sistema RAG (búsqueda en documentos) no estará disponible. "
+        "Las funciones de autenticación y otros endpoints seguirán funcionando."
     )
 
 # Configurar las API keys en las variables de entorno para LiteLLM
@@ -137,37 +146,56 @@ else:
 
 # Imprimir mensaje de inicio
 print("=" * 60)
-print("Iniciando motor del chat...")
-print(f"Modelo de IA configurado: {modelo_por_defecto}")
-print("=" * 60)
+# Inicializar componentes RAG solo si SUPABASE_DB_PASSWORD está configurado
+vector_store = None
+index = None
+query_engine = None
+embed_model = None
 
-# Extraer el project_ref de la URL de Supabase
-project_ref = SUPABASE_URL.replace("https://", "").replace(".supabase.co", "")
+if RAG_AVAILABLE:
+    try:
+        print("Iniciando motor del chat...")
+        print(f"Modelo de IA configurado: {modelo_por_defecto}")
+        print("=" * 60)
 
-# Definir el modelo de embedding de OpenAI (mismo que en ingest.py)
-embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+        # Extraer el project_ref de la URL de Supabase
+        project_ref = SUPABASE_URL.replace("https://", "").replace(".supabase.co", "")
 
-# Construir la cadena de conexión completa (mismo método que en ingest.py)
-encoded_password = quote_plus(SUPABASE_DB_PASSWORD)
-postgres_connection_string = f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres"
+        # Definir el modelo de embedding de OpenAI (mismo que en ingest.py)
+        embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
-# Inicializar el vector store apuntando a la colección existente
-vector_store = SupabaseVectorStore(
-    postgres_connection_string=postgres_connection_string,
-    collection_name=config.VECTOR_COLLECTION_NAME
-)
+        # Construir la cadena de conexión completa (mismo método que en ingest.py)
+        encoded_password = quote_plus(SUPABASE_DB_PASSWORD)
+        postgres_connection_string = f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres"
 
-# Cargar el índice desde el vector store existente
-index = VectorStoreIndex.from_vector_store(
-    vector_store=vector_store,
-    embed_model=embed_model
-)
+        # Inicializar el vector store apuntando a la colección existente
+        vector_store = SupabaseVectorStore(
+            postgres_connection_string=postgres_connection_string,
+            collection_name=config.VECTOR_COLLECTION_NAME
+        )
 
-# Crear el motor de consulta (Query Engine) con retriever para obtener contexto
-query_engine = index.as_query_engine(similarity_top_k=config.SIMILARITY_TOP_K)
+        # Cargar el índice desde el vector store existente
+        index = VectorStoreIndex.from_vector_store(
+            vector_store=vector_store,
+            embed_model=embed_model
+        )
 
-# Imprimir mensaje de confirmación
-print("¡Motor listo para recibir preguntas!")
+        # Crear el motor de consulta (Query Engine) con retriever para obtener contexto
+        query_engine = index.as_query_engine(similarity_top_k=config.SIMILARITY_TOP_K)
+
+        # Imprimir mensaje de confirmación
+        print("¡Motor listo para recibir preguntas!")
+        logger.info("Sistema RAG inicializado correctamente")
+    except Exception as e:
+        logger.error(f"Error al inicializar sistema RAG: {e}")
+        logger.warning("El sistema continuará sin RAG. Las funciones de autenticación y otros endpoints seguirán funcionando.")
+        RAG_AVAILABLE = False
+        vector_store = None
+        index = None
+        query_engine = None
+        embed_model = None
+else:
+    logger.info("Sistema RAG deshabilitado (SUPABASE_DB_PASSWORD no configurado)")
 
 # Inicializar cliente de Supabase para autenticación
 supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -176,9 +204,23 @@ supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 app = FastAPI(title=config.API_TITLE, description=config.API_DESCRIPTION)
 
 # Configurar CORS para permitir peticiones desde el frontend
+# Obtener FRONTEND_URL de variables de entorno para permitir CORS dinámicamente
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# Permitir tanto localhost (desarrollo) como el dominio de producción
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://codextrader.tech",
+    "https://www.codextrader.tech",
+]
+
+# Si FRONTEND_URL está configurado y no está en la lista, agregarlo
+if frontend_url and frontend_url not in allowed_origins:
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Frontend de Next.js
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -314,14 +356,22 @@ async def chat(query_input: QueryInput, user = Depends(get_user)):
         if is_greeting:
             # Para saludos simples, saltarse RAG completamente (contexto vacío)
             contexto = ""
+        elif not RAG_AVAILABLE or index is None:
+            # Si RAG no está disponible, usar contexto vacío
+            logger.warning("RAG no disponible, respondiendo sin contexto de documentos")
+            contexto = ""
         else:
             # Obtener contexto del RAG usando el query engine
             # Usamos retrieve para obtener los nodos relevantes sin generar respuesta aún
-            retriever = index.as_retriever(similarity_top_k=config.SIMILARITY_TOP_K)
-            nodes = retriever.retrieve(query_input.query)
-            
-            # Construir el contexto a partir de los nodos recuperados
-            contexto = "\n\n".join([node.text for node in nodes])
+            try:
+                retriever = index.as_retriever(similarity_top_k=config.SIMILARITY_TOP_K)
+                nodes = retriever.retrieve(query_input.query)
+                
+                # Construir el contexto a partir de los nodos recuperados
+                contexto = "\n\n".join([node.text for node in nodes])
+            except Exception as e:
+                logger.error(f"Error al recuperar contexto RAG: {e}")
+                contexto = ""
         
         # Crear el prompt con contexto y pregunta
         # Si es un saludo, usar un prompt más simple sin contexto RAG
