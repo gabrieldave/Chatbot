@@ -1,0 +1,84 @@
+# ============================================================================
+# VARIABLES DE ENTORNO PARA RAILWAY - CODEX TRADER BACKEND
+# ============================================================================
+# Copia estas variables UNA POR UNA en Railway
+# Ve a: Tu Proyecto → Variables → + New Variable
+# ============================================================================
+
+# ============================================================================
+# 1. SUPABASE (OBLIGATORIO)
+# ============================================================================
+
+SUPABASE_URL=https://eixvqedpyuybfywmdulg.supabase.co
+
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpeHZxZWRweXV5YmZ5d21kdWxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODA1NzYwMCwiZXhwIjoyMDUzNjMzNjAwfQ.tu_service_key_completo_aqui
+
+# ============================================================================
+# 2. FRONTEND URL (OBLIGATORIO)
+# ============================================================================
+# Temporal: usa localhost mientras despliegas el frontend
+# Después: actualiza con la URL de Vercel
+
+FRONTEND_URL=http://localhost:3000
+
+# Después de desplegar frontend, cambia a:
+# FRONTEND_URL=https://tu-frontend.vercel.app
+
+# ============================================================================
+# 3. EMAIL SMTP - GMAIL (OBLIGATORIO)
+# ============================================================================
+
+SMTP_HOST=smtp.gmail.com
+
+SMTP_PORT=587
+
+SMTP_USER=todossomostr4ders@gmail.com
+
+SMTP_PASS=kjhf biie tgrk wncz
+
+EMAIL_FROM=Codex Trader <todossomostr4ders@gmail.com>
+
+ADMIN_EMAIL=todossomostr4ders@gmail.com
+
+# ============================================================================
+# 4. MODELO DE IA (OBLIGATORIO - Elige UNA opción)
+# ============================================================================
+
+# OPCIÓN A: Deepseek (Recomendado - Más barato)
+DEEPSEEK_API_KEY=sk-tu_api_key_de_deepseek_aqui
+
+CHAT_MODEL=deepseek/deepseek-chat
+
+# OPCIÓN B: OpenAI (Alternativa)
+# OPENAI_API_KEY=sk-proj-tu_api_key_de_openai_aqui
+# CHAT_MODEL=gpt-3.5-turbo
+
+# ============================================================================
+# 5. STRIPE (OPCIONAL - Solo si usas pagos)
+# ============================================================================
+
+STRIPE_SECRET_KEY=sk_live_tu_secret_key_aqui
+
+STRIPE_WEBHOOK_SECRET=whsec_tu_webhook_secret_aqui
+
+STRIPE_PRICE_ID_EXPLORER=price_tu_price_id_explorer
+
+STRIPE_PRICE_ID_TRADER=price_tu_price_id_trader
+
+STRIPE_PRICE_ID_PRO=price_tu_price_id_pro
+
+STRIPE_PRICE_ID_INSTITUCIONAL=price_tu_price_id_institucional
+
+STRIPE_FAIR_USE_COUPON_ID=FAIR_USE_20
+
+# ============================================================================
+# NOTAS IMPORTANTES
+# ============================================================================
+# 1. NO uses comillas en los valores en Railway
+# 2. Los nombres son case-sensitive (mayúsculas/minúsculas importan)
+# 3. Después de agregar variables, Railway reiniciará automáticamente
+# 4. Para SMTP_PASS: usa una "App Password" de Gmail (16 caracteres)
+# 5. Para SUPABASE_SERVICE_KEY: usa la "service_role" key, NO la "anon" key
+# 6. Para CHAT_MODEL: solo configura UNA API key (Deepseek O OpenAI)
+# ============================================================================
+
