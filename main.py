@@ -2013,9 +2013,6 @@ async def get_user_usage(user = Depends(get_user)):
             result["fair_use_discount_used"] = profile.get("fair_use_discount_used", False)
         
         return result
-            "fair_use_discount_used": profile.get("fair_use_discount_used", False),
-            "fair_use_discount_eligible_at": profile.get("fair_use_discount_eligible_at")
-        }
         
     except HTTPException:
         raise
