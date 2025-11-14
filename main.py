@@ -1596,11 +1596,12 @@ async def handle_invoice_paid(invoice: dict):
         # Intentar actualizar tokens_monthly_limit solo si la columna existe
         try:
             update_data["tokens_monthly_limit"] = tokens_per_month
-            "fair_use_warning_shown": False,  # Resetear aviso suave
-            "fair_use_discount_eligible": False,  # Resetear elegibilidad para descuento
-            "fair_use_discount_used": False,  # Resetear uso de descuento
-            "fair_use_discount_eligible_at": None  # Resetear fecha de elegibilidad
-        }
+            update_data["fair_use_warning_shown"] = False  # Resetear aviso suave
+            update_data["fair_use_discount_eligible"] = False  # Resetear elegibilidad para descuento
+            update_data["fair_use_discount_used"] = False  # Resetear uso de descuento
+            update_data["fair_use_discount_eligible_at"] = None  # Resetear fecha de elegibilidad
+        except Exception as e:
+            logger.warning(f"No se pudo actualizar campos de uso justo (columnas pueden no existir): {e}")
         
         if period_end:
             update_data["current_period_end"] = period_end
@@ -2012,11 +2013,6 @@ async def get_user_usage(user = Depends(get_user)):
             result["fair_use_discount_used"] = profile.get("fair_use_discount_used", False)
         
         return result
-            "tokens_restantes": tokens_restantes,
-            "usage_percent": round(usage_percent, 2),
-            "current_plan": profile.get("current_plan"),
-            "fair_use_warning_shown": profile.get("fair_use_warning_shown", False),
-            "fair_use_discount_eligible": profile.get("fair_use_discount_eligible", False),
             "fair_use_discount_used": profile.get("fair_use_discount_used", False),
             "fair_use_discount_eligible_at": profile.get("fair_use_discount_eligible_at")
         }
