@@ -10,7 +10,16 @@ Error: A Serverless Function has exceeded the unzipped maximum size of 250 MB
 
 ---
 
-## ✅ Solución: Configurar Root Directory en Vercel
+## ⚠️ Problemas Comunes en la Configuración
+
+1. **Framework Preset:** Debe ser "Next.js" (NO "FastAPI")
+2. **Root Directory:** Debe ser "frontend" (NO "./")
+3. **Build Command:** Debe ser "npm run build" y estar ACTIVADO
+4. **Install Command:** Debe ser "npm install" (NO "pip install...")
+
+---
+
+## ✅ Solución: Configurar Correctamente en Vercel
 
 ### Paso 1: Configurar en Vercel Dashboard
 
