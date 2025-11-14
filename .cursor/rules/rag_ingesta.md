@@ -185,3 +185,5 @@ Al terminar la ingesta, generar reporte con:
 - Cualquier cambio a los valores por defecto debe ser **explícitamente solicitado** por el usuario
 - El objetivo es mantener un sistema **rápido, estable y dentro de los límites de OpenAI Tier 3**
 
+
+

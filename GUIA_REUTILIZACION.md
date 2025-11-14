@@ -490,3 +490,5 @@ Tu infraestructura RAG está lista para ser reutilizada en cualquier proyecto. E
 
 **¿Necesitas ayuda?** Revisa los ejemplos en `EJEMPLO_BUSQUEDA_FILTROS.py` y `EJEMPLO_ERROR_LOGGING.md`.
 
+
+

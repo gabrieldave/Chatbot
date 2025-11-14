@@ -38,17 +38,17 @@ CHUNK_OVERLAP = get_env("CHUNK_OVERLAP", 200, int)
 # Modelo de embeddings (NO CAMBIAR SIN SOLICITUD EXPLÍCITA)
 EMBEDDING_MODEL = get_env("EMBEDDING_MODEL", "text-embedding-3-small")
 
-# Batch size para embeddings: 30-40 chunks por request
-EMBEDDING_BATCH_SIZE = get_env("EMBEDDING_BATCH_SIZE", 30, int)
-if EMBEDDING_BATCH_SIZE < 30 or EMBEDDING_BATCH_SIZE > 40:
-    raise ValueError(f"EMBEDDING_BATCH_SIZE debe estar entre 30 y 40, actual: {EMBEDDING_BATCH_SIZE}")
+# Batch size para embeddings: 30-40 chunks por request (REDUCIDO para evitar sobrecarga)
+EMBEDDING_BATCH_SIZE = get_env("EMBEDDING_BATCH_SIZE", 20, int)  # Reducido de 30 a 20
+if EMBEDDING_BATCH_SIZE < 15 or EMBEDDING_BATCH_SIZE > 40:
+    raise ValueError(f"EMBEDDING_BATCH_SIZE debe estar entre 15 y 40, actual: {EMBEDDING_BATCH_SIZE}")
 
 # ============================================================================
 # CONFIGURACIÓN DE WORKERS Y CONCURRENCIA
 # ============================================================================
 
-# Número de workers paralelos
-MAX_WORKERS = get_env("MAX_WORKERS", 15, int)
+# Número de workers paralelos (REDUCIDO para evitar sobrecarga en Supabase)
+MAX_WORKERS = get_env("MAX_WORKERS", 5, int)  # Reducido de 15 a 5
 
 # ============================================================================
 # CONFIGURACIÓN DE LÍMITES OPENAI TIER 3
@@ -59,9 +59,9 @@ TIER3_RPM_LIMIT = 5000
 TIER3_TPM_LIMIT = 5000000
 TIER3_TPD_LIMIT = 100000000
 
-# Objetivo: 70% de capacidad (NO EXCEDER)
-OPENAI_RPM_TARGET = get_env("OPENAI_RPM_TARGET", int(TIER3_RPM_LIMIT * 0.7), int)
-OPENAI_TPM_TARGET = get_env("OPENAI_TPM_TARGET", int(TIER3_TPM_LIMIT * 0.7), int)
+# Objetivo: 57% de capacidad (REDUCIDO para dar margen a Supabase)
+OPENAI_RPM_TARGET = get_env("OPENAI_RPM_TARGET", int(TIER3_RPM_LIMIT * 0.57), int)  # ~2,850 RPM
+OPENAI_TPM_TARGET = get_env("OPENAI_TPM_TARGET", int(TIER3_TPM_LIMIT * 0.57), int)  # ~2,850,000 TPM
 
 # Validar que no exceda el 70%
 if OPENAI_RPM_TARGET > TIER3_RPM_LIMIT * 0.7:

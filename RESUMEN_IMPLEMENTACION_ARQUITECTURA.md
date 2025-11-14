@@ -165,3 +165,5 @@ MAX_WORKERS=20 EMBEDDING_BATCH_SIZE=35 python ingest_optimized_rag.py
 3. Monitorear logs y reportes
 4. Optimizar según necesidades específicas
 
+
+

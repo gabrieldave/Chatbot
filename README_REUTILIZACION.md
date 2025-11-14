@@ -122,3 +122,5 @@ Ver `EJEMPLO_PROYECTO_NUEVO.py` para ejemplos completos de:
 
 Tu infraestructura RAG está lista para ser reutilizada en cualquier proyecto.
 
+
+

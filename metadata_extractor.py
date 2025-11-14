@@ -414,3 +414,5 @@ def extract_rich_metadata(file_path: str, text: Optional[str] = None) -> Dict[st
         'file_path': file_path
     }
 
+
+

@@ -271,3 +271,5 @@ Si no están instaladas, el sistema usa heurísticas simples.
 
 El sistema está listo y completamente funcional! 🎉
 
+
+

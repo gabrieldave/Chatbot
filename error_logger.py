@@ -250,3 +250,5 @@ def get_recent_errors(limit: int = 20) -> list:
         print(f"⚠️  Error obteniendo errores recientes: {e}")
         return []
 
+
+

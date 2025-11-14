@@ -145,3 +145,5 @@ El monitor se integra automáticamente en el pipeline:
 - Instala con: `pip install rich`
 - Si no está disponible, el sistema usa salida simple automáticamente
 
+
+

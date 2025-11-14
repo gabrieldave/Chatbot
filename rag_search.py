@@ -330,3 +330,5 @@ def search_with_filters_llamaindex(
         print(f"⚠️  Error en búsqueda LlamaIndex: {e}")
         return []
 
+
+

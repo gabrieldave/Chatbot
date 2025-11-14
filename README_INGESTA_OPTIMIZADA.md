@@ -119,3 +119,5 @@ Los logs se guardan en:
 - `config_ingesta.py`: Configuración centralizada
 - `config.py`: Configuración del proyecto general
 
+
+

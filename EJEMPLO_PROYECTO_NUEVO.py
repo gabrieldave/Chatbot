@@ -251,3 +251,5 @@ if __name__ == "__main__":
     # Descomentar para ejecutar
     # ejemplo_uso_simple()
 
+
+

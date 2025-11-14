@@ -190,3 +190,5 @@ Ver `ejemplo_reporte_ingesta.md` para un ejemplo completo del reporte en markdow
 - El reporte se genera **automáticamente** al finalizar
 - El sistema **no rompe** el pipeline existente, solo lo mejora
 
+
+

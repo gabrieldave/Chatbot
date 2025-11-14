@@ -53,3 +53,5 @@ class RAGConfig:
         encoded_password = quote_plus(self.supabase_password)
         return f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres"
 
+
+
