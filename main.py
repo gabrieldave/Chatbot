@@ -71,10 +71,20 @@ COHERE_API_KEY = get_env("COHERE_API_KEY")  # Para Cohere
 FRONTEND_URL = get_env("FRONTEND_URL") or "http://localhost:3000"
 
 # Verificar que las variables estén definidas
-if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not OPENAI_API_KEY or not SUPABASE_DB_PASSWORD:
+# OPENAI_API_KEY o DEEPSEEK_API_KEY son opcionales (al menos una debe estar)
+# SUPABASE_DB_PASSWORD es opcional para el backend (solo se usa en ingesta)
+has_ai_key = bool(OPENAI_API_KEY or DEEPSEEK_API_KEY)
+if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not has_ai_key:
+    missing = []
+    if not SUPABASE_URL:
+        missing.append("SUPABASE_URL")
+    if not SUPABASE_SERVICE_KEY:
+        missing.append("SUPABASE_SERVICE_KEY")
+    if not has_ai_key:
+        missing.append("OPENAI_API_KEY o DEEPSEEK_API_KEY (al menos una)")
     raise ValueError(
-        "Faltan variables de entorno. Asegúrate de tener SUPABASE_URL, "
-        "SUPABASE_SERVICE_KEY, OPENAI_API_KEY y SUPABASE_DB_PASSWORD en tu archivo .env"
+        f"Faltan variables de entorno obligatorias: {', '.join(missing)}. "
+        "Asegúrate de tenerlas configuradas en Railway."
     )
 
 # Configurar las API keys en las variables de entorno para LiteLLM
