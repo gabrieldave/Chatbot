@@ -760,34 +760,40 @@ Responde siempre en español."""
         
         # IMPORTANTE: Lógica de uso justo (Fair Use)
         # Obtener información del perfil para calcular porcentaje de uso
-        profile_fair_use = supabase_client.table("profiles").select(
-            "tokens_monthly_limit, fair_use_warning_shown, fair_use_discount_eligible, fair_use_discount_used"
-        ).eq("id", user_id).execute()
-        
+        # Manejar el caso cuando las columnas no existen (compatibilidad con esquemas antiguos)
         update_data = {
             "tokens_restantes": nuevos_tokens
         }
         
-        if profile_fair_use.data:
-            profile = profile_fair_use.data[0]
-            tokens_monthly_limit = profile.get("tokens_monthly_limit") or 0
+        try:
+            profile_fair_use = supabase_client.table("profiles").select(
+                "tokens_monthly_limit, fair_use_warning_shown, fair_use_discount_eligible, fair_use_discount_used"
+            ).eq("id", user_id).execute()
             
-            if tokens_monthly_limit > 0:
-                # Calcular porcentaje de uso
-                tokens_usados_total = tokens_monthly_limit - nuevos_tokens
-                usage_percent = (tokens_usados_total / tokens_monthly_limit) * 100
+            if profile_fair_use.data:
+                profile = profile_fair_use.data[0]
+                tokens_monthly_limit = profile.get("tokens_monthly_limit") or 0
                 
-                # Aviso suave al 80% de uso
-                if usage_percent >= 80 and not profile.get("fair_use_warning_shown", False):
-                    update_data["fair_use_warning_shown"] = True
-                    print(f"WARNING: Usuario {user_id} alcanzo 80% de uso ({usage_percent:.1f}%)")
-                
-                # Elegibilidad para descuento al 90% de uso
-                if usage_percent >= 90 and not profile.get("fair_use_discount_eligible", False):
-                    from datetime import datetime
-                    update_data["fair_use_discount_eligible"] = True
-                    update_data["fair_use_discount_eligible_at"] = datetime.utcnow().isoformat()
-                    print(f"🔔 Usuario {user_id} alcanzó 90% de uso ({usage_percent:.1f}%) - Elegible para descuento del 20%")
+                if tokens_monthly_limit > 0:
+                    # Calcular porcentaje de uso
+                    tokens_usados_total = tokens_monthly_limit - nuevos_tokens
+                    usage_percent = (tokens_usados_total / tokens_monthly_limit) * 100
+                    
+                    # Aviso suave al 80% de uso
+                    if usage_percent >= 80 and not profile.get("fair_use_warning_shown", False):
+                        update_data["fair_use_warning_shown"] = True
+                        print(f"WARNING: Usuario {user_id} alcanzo 80% de uso ({usage_percent:.1f}%)")
+                    
+                    # Elegibilidad para descuento al 90% de uso
+                    if usage_percent >= 90 and not profile.get("fair_use_discount_eligible", False):
+                        from datetime import datetime
+                        update_data["fair_use_discount_eligible"] = True
+                        update_data["fair_use_discount_eligible_at"] = datetime.utcnow().isoformat()
+                        print(f"🔔 Usuario {user_id} alcanzó 90% de uso ({usage_percent:.1f}%) - Elegible para descuento del 20%")
+        except Exception as e:
+            # Si las columnas no existen, continuar sin la lógica de uso justo
+            logger.warning(f"Columnas de uso justo no disponibles (puede que no estén creadas): {e}")
+            # Continuar sin actualizar campos de uso justo
         
         try:
             supabase_client.table("profiles").update(update_data).eq("id", user_id).execute()
@@ -1417,12 +1423,16 @@ async def handle_checkout_session_completed(session: dict):
             # Establecer tokens iniciales y límite mensual según el plan
             if tokens_per_month:
                 update_data["tokens_restantes"] = tokens_per_month
-                update_data["tokens_monthly_limit"] = tokens_per_month
-                # Resetear campos de uso justo al suscribirse por primera vez
-                update_data["fair_use_warning_shown"] = False
-                update_data["fair_use_discount_eligible"] = False
-                update_data["fair_use_discount_used"] = False
-                update_data["fair_use_discount_eligible_at"] = None
+                # Intentar actualizar tokens_monthly_limit solo si la columna existe
+                try:
+                    update_data["tokens_monthly_limit"] = tokens_per_month
+                    # Resetear campos de uso justo al suscribirse por primera vez
+                    update_data["fair_use_warning_shown"] = False
+                    update_data["fair_use_discount_eligible"] = False
+                    update_data["fair_use_discount_used"] = False
+                    update_data["fair_use_discount_eligible_at"] = None
+                except Exception as e:
+                    logger.warning(f"No se pudo actualizar tokens_monthly_limit (columna puede no existir): {e}")
         
         # IMPORTANTE: Si el usuario usó el descuento de uso justo, marcarlo
         # Verificar en metadata si se aplicó el descuento
@@ -1580,8 +1590,12 @@ async def handle_invoice_paid(invoice: dict):
         # El frontend puede leer estos valores desde GET /me/usage
         update_data = {
             "current_plan": plan_code,
-            "tokens_restantes": tokens_per_month,  # Resetear tokens al renovar suscripción
-            "tokens_monthly_limit": tokens_per_month,  # Actualizar límite mensual según el plan
+            "tokens_restantes": tokens_per_month  # Resetear tokens al renovar suscripción
+        }
+        
+        # Intentar actualizar tokens_monthly_limit solo si la columna existe
+        try:
+            update_data["tokens_monthly_limit"] = tokens_per_month
             "fair_use_warning_shown": False,  # Resetear aviso suave
             "fair_use_discount_eligible": False,  # Resetear elegibilidad para descuento
             "fair_use_discount_used": False,  # Resetear uso de descuento
@@ -1946,10 +1960,18 @@ async def get_user_usage(user = Depends(get_user)):
     try:
         user_id = user.id
         
-        profile_response = supabase_client.table("profiles").select(
-            "tokens_restantes, tokens_monthly_limit, current_plan, fair_use_warning_shown, "
-            "fair_use_discount_eligible, fair_use_discount_used, fair_use_discount_eligible_at"
-        ).eq("id", user_id).execute()
+        # Intentar obtener columnas de uso justo, pero manejar si no existen
+        try:
+            profile_response = supabase_client.table("profiles").select(
+                "tokens_restantes, tokens_monthly_limit, current_plan, fair_use_warning_shown, "
+                "fair_use_discount_eligible, fair_use_discount_used, fair_use_discount_eligible_at"
+            ).eq("id", user_id).execute()
+        except Exception as e:
+            # Si falla por columnas faltantes, intentar solo con columnas básicas
+            logger.warning(f"Error al obtener columnas de uso justo, intentando solo columnas básicas: {e}")
+            profile_response = supabase_client.table("profiles").select(
+                "tokens_restantes, current_plan"
+            ).eq("id", user_id).execute()
         
         if not profile_response.data:
             raise HTTPException(
@@ -1961,16 +1983,35 @@ async def get_user_usage(user = Depends(get_user)):
         tokens_restantes = profile.get("tokens_restantes", 0) or 0
         tokens_monthly_limit = profile.get("tokens_monthly_limit", 0) or 0
         
-        # Calcular porcentaje de uso
+        # Calcular porcentaje de uso solo si tokens_monthly_limit existe
         usage_percent = 0.0
+        tokens_usados = 0
         if tokens_monthly_limit > 0:
             tokens_usados = tokens_monthly_limit - tokens_restantes
             usage_percent = (tokens_usados / tokens_monthly_limit) * 100
             # Asegurar que no sea negativo
             usage_percent = max(0.0, min(100.0, usage_percent))
         
-        return {
-            "tokens_monthly_limit": tokens_monthly_limit,
+        result = {
+            "tokens_restantes": tokens_restantes,
+            "current_plan": profile.get("current_plan")
+        }
+        
+        # Agregar campos de uso justo solo si existen
+        if tokens_monthly_limit > 0:
+            result["tokens_monthly_limit"] = tokens_monthly_limit
+            result["tokens_usados"] = tokens_usados
+            result["usage_percent"] = usage_percent
+        
+        # Intentar agregar campos de fair use si existen
+        if "fair_use_warning_shown" in profile:
+            result["fair_use_warning_shown"] = profile.get("fair_use_warning_shown", False)
+        if "fair_use_discount_eligible" in profile:
+            result["fair_use_discount_eligible"] = profile.get("fair_use_discount_eligible", False)
+        if "fair_use_discount_used" in profile:
+            result["fair_use_discount_used"] = profile.get("fair_use_discount_used", False)
+        
+        return result
             "tokens_restantes": tokens_restantes,
             "usage_percent": round(usage_percent, 2),
             "current_plan": profile.get("current_plan"),
