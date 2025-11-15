@@ -3,6 +3,10 @@ import sys
 import re
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
+
+# Agregar el directorio actual al path de Python para que pueda encontrar módulos locales
+# Esto es necesario en Railway donde el path puede ser diferente
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI, Depends, HTTPException, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
