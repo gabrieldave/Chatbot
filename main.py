@@ -106,7 +106,6 @@ def get_env(key):
     return value.strip('"').strip("'").strip()
 
 # Obtener las variables de entorno
-SUPABASE_URL = get_env("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = get_env("SUPABASE_SERVICE_KEY")
 OPENAI_API_KEY = get_env("OPENAI_API_KEY")
 SUPABASE_DB_PASSWORD = get_env("SUPABASE_DB_PASSWORD")
@@ -118,14 +117,77 @@ COHERE_API_KEY = get_env("COHERE_API_KEY")  # Para Cohere
 # Variables de entorno para Stripe (opcionales, solo necesarias si se usa Stripe)
 FRONTEND_URL = get_env("FRONTEND_URL") or "http://localhost:3000"
 
+# ============================================================================
+# LÓGICA PARA OBTENER URL REST DE SUPABASE
+# ============================================================================
+# SUPABASE_URL puede estar configurada con la URL de Postgres (postgresql://...)
+# Por eso derivamos la URL REST desde SUPABASE_REST_URL o SUPABASE_DB_URL
+
+def _derive_rest_url_from_db(db_url: str) -> str:
+    """
+    Deriva la URL REST de Supabase desde una URL de conexión a la base de datos.
+    
+    Acepta algo como:
+    postgresql://postgres:pass@db.eixvqedpyuybfywmdulg.supabase.co:5432/postgres
+    
+    y devuelve:
+    https://eixvqedpyuybfywmdulg.supabase.co
+    """
+    if not db_url:
+        raise ValueError("SUPABASE_DB_URL is empty, cannot derive REST URL")
+    
+    from urllib.parse import urlparse
+    parsed = urlparse(db_url)
+    host = parsed.hostname or ""
+    
+    # host típico: db.eixvqedpyuybfywmdulg.supabase.co
+    if host.startswith("db."):
+        host = host[3:]  # Remover prefijo "db."
+    
+    if not host:
+        raise ValueError(f"No se pudo extraer el hostname de SUPABASE_DB_URL: {db_url}")
+    
+    return f"https://{host}"
+
+# Intentar obtener URL REST de Supabase
+SUPABASE_REST_URL_ENV = get_env("SUPABASE_REST_URL")
+SUPABASE_DB_URL = get_env("SUPABASE_DB_URL")
+# También intentar desde SUPABASE_URL por compatibilidad (puede ser Postgres URL)
+SUPABASE_URL_LEGACY = get_env("SUPABASE_URL")
+
+if SUPABASE_REST_URL_ENV:
+    SUPABASE_REST_URL = SUPABASE_REST_URL_ENV
+    logger.info(f"✅ Usando SUPABASE_REST_URL: {SUPABASE_REST_URL}")
+elif SUPABASE_DB_URL:
+    SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_DB_URL)
+    logger.info(f"✅ URL REST derivada desde SUPABASE_DB_URL: {SUPABASE_REST_URL}")
+elif SUPABASE_URL_LEGACY and SUPABASE_URL_LEGACY.startswith("https://"):
+    # Si SUPABASE_URL es una URL REST válida (compatibilidad hacia atrás)
+    SUPABASE_REST_URL = SUPABASE_URL_LEGACY
+    logger.info(f"✅ Usando SUPABASE_URL (URL REST): {SUPABASE_REST_URL}")
+elif SUPABASE_URL_LEGACY and SUPABASE_URL_LEGACY.startswith("postgresql://"):
+    # Si SUPABASE_URL es una URL de Postgres, derivar desde ahí
+    SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_URL_LEGACY)
+    logger.info(f"✅ URL REST derivada desde SUPABASE_URL (Postgres): {SUPABASE_REST_URL}")
+else:
+    raise RuntimeError(
+        "No se pudo determinar la URL REST de Supabase. "
+        "Configura una de estas variables:\n"
+        "  - SUPABASE_REST_URL (URL REST directa, ej: https://xxx.supabase.co)\n"
+        "  - SUPABASE_DB_URL (URL de Postgres, ej: postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres)\n"
+        "  - SUPABASE_URL (URL REST o Postgres, para compatibilidad)"
+    )
+
+# Para RAG y otras funciones que necesitan el project_ref, derivarlo desde la URL REST
+# Extraer project_ref de la URL REST (formato: https://[project_ref].supabase.co)
+SUPABASE_PROJECT_REF = SUPABASE_REST_URL.replace("https://", "").replace(".supabase.co", "")
+
 # Verificar que las variables estén definidas
 # OPENAI_API_KEY o DEEPSEEK_API_KEY son opcionales (al menos una debe estar)
 # SUPABASE_DB_PASSWORD es opcional para el backend (solo se usa en ingesta y RAG)
 has_ai_key = bool(OPENAI_API_KEY or DEEPSEEK_API_KEY)
-if not SUPABASE_URL or not SUPABASE_SERVICE_KEY or not has_ai_key:
+if not SUPABASE_SERVICE_KEY or not has_ai_key:
     missing = []
-    if not SUPABASE_URL:
-        missing.append("SUPABASE_URL")
     if not SUPABASE_SERVICE_KEY:
         missing.append("SUPABASE_SERVICE_KEY")
     if not has_ai_key:
