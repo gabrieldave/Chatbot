@@ -6,7 +6,10 @@ from dotenv import load_dotenv
 
 # Agregar el directorio actual al path de Python para que pueda encontrar módulos locales
 # Esto es necesario en Railway donde el path puede ser diferente
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
 from fastapi import FastAPI, Depends, HTTPException, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -165,9 +168,8 @@ embed_model = None
 
 if RAG_AVAILABLE:
     try:
-        print("Iniciando motor del chat...")
-        print(f"Modelo de IA configurado: {modelo_por_defecto}")
-        print("=" * 60)
+        logger.info("Iniciando motor del chat...")
+        logger.info(f"Modelo de IA configurado: {modelo_por_defecto}")
 
         # Extraer el project_ref de la URL de Supabase
         project_ref = SUPABASE_URL.replace("https://", "").replace(".supabase.co", "")
@@ -180,12 +182,15 @@ if RAG_AVAILABLE:
         postgres_connection_string = f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres"
 
         # Inicializar el vector store apuntando a la colección existente
+        # Agregar timeout y mejor manejo de errores
+        logger.info(f"Conectando a Supabase database: db.{project_ref}.supabase.co")
         vector_store = SupabaseVectorStore(
             postgres_connection_string=postgres_connection_string,
             collection_name=config.VECTOR_COLLECTION_NAME
         )
 
         # Cargar el índice desde el vector store existente
+        logger.info("Cargando índice vectorial...")
         index = VectorStoreIndex.from_vector_store(
             vector_store=vector_store,
             embed_model=embed_model
@@ -195,10 +200,21 @@ if RAG_AVAILABLE:
         query_engine = index.as_query_engine(similarity_top_k=config.SIMILARITY_TOP_K)
 
         # Imprimir mensaje de confirmación
-        print("¡Motor listo para recibir preguntas!")
-        logger.info("Sistema RAG inicializado correctamente")
+        logger.info("✅ Sistema RAG inicializado correctamente")
     except Exception as e:
-        logger.error(f"Error al inicializar sistema RAG: {e}")
+        # Log más detallado del error
+        error_msg = str(e)
+        logger.error(f"❌ Error al inicializar sistema RAG: {error_msg}")
+        
+        # Mensaje más específico según el tipo de error
+        if "Network is unreachable" in error_msg or "connection" in error_msg.lower():
+            logger.warning("⚠️ No se pudo conectar a la base de datos de Supabase. Verifica:")
+            logger.warning("   1. Que SUPABASE_DB_PASSWORD esté configurado correctamente en Railway")
+            logger.warning("   2. Que el servidor de Supabase esté accesible desde Railway")
+            logger.warning("   3. Que no haya restricciones de firewall bloqueando la conexión")
+        else:
+            logger.warning(f"⚠️ Error desconocido: {error_msg}")
+        
         logger.warning("El sistema continuará sin RAG. Las funciones de autenticación y otros endpoints seguirán funcionando.")
         RAG_AVAILABLE = False
         vector_store = None
