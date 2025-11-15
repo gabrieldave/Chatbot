@@ -251,9 +251,17 @@ if not SUPABASE_SERVICE_KEY or not has_ai_key:
         missing.append("SUPABASE_SERVICE_KEY")
     if not has_ai_key:
         missing.append("OPENAI_API_KEY o DEEPSEEK_API_KEY (al menos una)")
+    
+    # Detectar si estamos en Render o Railway
+    platform = "Render"
+    if os.getenv("RAILWAY_ENVIRONMENT"):
+        platform = "Railway"
+    elif os.getenv("RENDER"):
+        platform = "Render"
+    
     raise ValueError(
         f"Faltan variables de entorno obligatorias: {', '.join(missing)}. "
-        "Asegúrate de tenerlas configuradas en Railway."
+        f"Asegúrate de tenerlas configuradas en {platform}."
     )
 
 # Verificar si SUPABASE_DB_PASSWORD está configurado para RAG
