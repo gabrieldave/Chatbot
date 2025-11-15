@@ -19,11 +19,17 @@ import config
 try:
     from lib.stripe import get_stripe_price_id, is_valid_plan_code, get_plan_code_from_price_id, STRIPE_WEBHOOK_SECRET
     import stripe
-    STRIPE_AVAILABLE = True
+    # Verificar que stripe.api_key esté configurado
+    if hasattr(stripe, 'api_key') and stripe.api_key:
+        STRIPE_AVAILABLE = True
+        logger.info("✅ Stripe configurado correctamente")
+    else:
+        STRIPE_AVAILABLE = False
+        logger.warning("⚠️ Stripe importado pero STRIPE_SECRET_KEY no está configurada")
 except (ImportError, ValueError) as e:
     STRIPE_AVAILABLE = False
     STRIPE_WEBHOOK_SECRET = None
-    print(f"WARNING: Stripe no esta disponible: {e}")
+    logger.warning(f"⚠️ Stripe no está disponible: {e}")
 
 # Configurar encoding para Windows
 if sys.platform == 'win32':
