@@ -48,20 +48,36 @@ try:
     # Intentar importar desde lib.stripe
     try:
         from lib.stripe import get_stripe_price_id, is_valid_plan_code, get_plan_code_from_price_id, STRIPE_WEBHOOK_SECRET
-    except ImportError:
-        # Si falla, intentar importar directamente desde el directorio actual
+    except ImportError as import_err:
+        # Si falla, intentar importar directamente desde el archivo
         import importlib.util
-        stripe_path = os.path.join(current_dir, "lib", "stripe.py")
-        if os.path.exists(stripe_path):
-            spec = importlib.util.spec_from_file_location("lib.stripe", stripe_path)
-            stripe_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(stripe_module)
-            get_stripe_price_id = stripe_module.get_stripe_price_id
-            is_valid_plan_code = stripe_module.is_valid_plan_code
-            get_plan_code_from_price_id = stripe_module.get_plan_code_from_price_id
-            STRIPE_WEBHOOK_SECRET = stripe_module.STRIPE_WEBHOOK_SECRET
-        else:
-            raise ImportError(f"No se encontró lib/stripe.py en {stripe_path}")
+        # Intentar múltiples rutas posibles (Railway usa /app, local puede ser diferente)
+        possible_paths = [
+            os.path.join(current_dir, "lib", "stripe.py"),
+            os.path.join("/app", "lib", "stripe.py"),
+            "lib/stripe.py",
+            "./lib/stripe.py"
+        ]
+        
+        stripe_module = None
+        for stripe_path in possible_paths:
+            if os.path.exists(stripe_path):
+                try:
+                    spec = importlib.util.spec_from_file_location("lib.stripe", stripe_path)
+                    stripe_module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(stripe_module)
+                    get_stripe_price_id = stripe_module.get_stripe_price_id
+                    is_valid_plan_code = stripe_module.is_valid_plan_code
+                    get_plan_code_from_price_id = stripe_module.get_plan_code_from_price_id
+                    STRIPE_WEBHOOK_SECRET = stripe_module.STRIPE_WEBHOOK_SECRET
+                    logger.info(f"✅ Módulo Stripe cargado desde: {stripe_path}")
+                    break
+                except Exception as e:
+                    logger.debug(f"No se pudo cargar desde {stripe_path}: {e}")
+                    continue
+        
+        if stripe_module is None:
+            raise ImportError(f"No se encontró lib/stripe.py. Rutas intentadas: {possible_paths}. Error original: {import_err}")
     
     import stripe
     # Verificar que stripe.api_key esté configurado
@@ -196,14 +212,11 @@ if RAG_AVAILABLE:
         embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
         # Construir la cadena de conexión completa
-        # Intentar primero con connection pooling (más compatible con Railway y evita problemas IPv6)
+        # Usar conexión directa (más confiable que connection pooling)
         encoded_password = quote_plus(SUPABASE_DB_PASSWORD)
+        postgres_connection_string = f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres"
         
-        # Opción 1: Connection pooling (recomendado para Railway)
-        # Usar el pooler de Supabase que es más compatible con diferentes redes
-        postgres_connection_string = f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
-        
-        logger.info(f"Conectando a Supabase usando connection pooling...")
+        logger.info(f"Conectando a Supabase database: db.{project_ref}.supabase.co:5432")
         vector_store = SupabaseVectorStore(
             postgres_connection_string=postgres_connection_string,
             collection_name=config.VECTOR_COLLECTION_NAME
