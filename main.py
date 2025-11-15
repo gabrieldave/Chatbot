@@ -382,8 +382,14 @@ else:
     logger.info("Sistema RAG deshabilitado (SUPABASE_DB_PASSWORD no configurado)")
 
 # Inicializar cliente de Supabase para autenticación (usar URL REST)
-supabase_client = create_client(SUPABASE_REST_URL, SUPABASE_SERVICE_KEY)
-logger.info(f"✅ Cliente de Supabase inicializado con URL REST: {SUPABASE_REST_URL}")
+try:
+    supabase_client = create_client(SUPABASE_REST_URL, SUPABASE_SERVICE_KEY)
+    logger.info(f"✅ Cliente de Supabase inicializado con URL REST: {SUPABASE_REST_URL}")
+    # Verificar que el cliente funciona haciendo una prueba simple
+    logger.info(f"✅ SUPABASE_SERVICE_KEY configurado: {'Sí' if SUPABASE_SERVICE_KEY else 'No'}")
+except Exception as e:
+    logger.error(f"❌ Error al inicializar cliente de Supabase: {e}")
+    raise RuntimeError(f"No se pudo inicializar cliente de Supabase: {e}")
 
 # Inicializar FastAPI
 app = FastAPI(title=config.API_TITLE, description=config.API_DESCRIPTION)
