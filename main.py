@@ -232,29 +232,63 @@ if RAG_AVAILABLE:
         
         for i, conn_str in enumerate(connection_strings, 1):
             try:
-                logger.info(f"Intentando conexión {i}/{len(connection_strings)}: {conn_str.split('@')[1] if '@' in conn_str else 'N/A'}")
+                host_info = conn_str.split('@')[1].split('/')[0] if '@' in conn_str else 'N/A'
+                logger.info(f"Intentando conexión {i}/{len(connection_strings)}: {host_info}")
+                
+                # Crear vector store con timeout más largo
                 vector_store = SupabaseVectorStore(
                     postgres_connection_string=conn_str,
                     collection_name=config.VECTOR_COLLECTION_NAME
                 )
-                # Intentar una operación simple para verificar la conexión
+                
+                # Intentar cargar el índice para verificar la conexión realmente funciona
+                # Esto hace una consulta real a la base de datos
+                logger.info("Verificando conexión con consulta de prueba...")
+                test_index = VectorStoreIndex.from_vector_store(
+                    vector_store=vector_store,
+                    embed_model=embed_model
+                )
+                
                 logger.info(f"✅ Conexión exitosa con método {i}")
                 postgres_connection_string = conn_str
+                # Usar el índice de prueba
+                index = test_index
                 break
             except Exception as e:
                 last_error = e
-                logger.warning(f"⚠️ Método {i} falló: {str(e)[:100]}")
+                error_msg = str(e)
+                # Log más detallado del error
+                if "Network is unreachable" in error_msg:
+                    logger.warning(f"⚠️ Método {i} falló: Network unreachable (problema de conectividad de red)")
+                elif "password authentication failed" in error_msg.lower():
+                    logger.warning(f"⚠️ Método {i} falló: Password incorrecta")
+                elif "Tenant or user not found" in error_msg:
+                    logger.warning(f"⚠️ Método {i} falló: Connection pooling no configurado o región incorrecta")
+                else:
+                    logger.warning(f"⚠️ Método {i} falló: {error_msg[:150]}")
                 continue
         
-        if vector_store is None:
-            raise Exception(f"No se pudo conectar a Supabase con ningún método. Último error: {last_error}")
+        if vector_store is None or index is None:
+            error_details = str(last_error) if last_error else "Desconocido"
+            raise Exception(
+                f"No se pudo conectar a Supabase con ningún método.\n"
+                f"Último error: {error_details}\n\n"
+                f"SOLUCIÓN:\n"
+                f"1. Ve a Supabase Dashboard → Settings → Database\n"
+                f"2. Verifica 'Network Restrictions' - debe estar DESHABILITADO\n"
+                f"3. Verifica 'Connection pooling' - debe estar HABILITADO\n"
+                f"4. Si connection pooling está habilitado, copia la URL completa y verifica la región\n"
+                f"5. Reinicia el servicio en Railway después de hacer cambios"
+            )
 
-        # Cargar el índice desde el vector store existente
-        logger.info("Cargando índice vectorial...")
-        index = VectorStoreIndex.from_vector_store(
-            vector_store=vector_store,
-            embed_model=embed_model
-        )
+        # Si ya cargamos el índice en el loop anterior, no necesitamos cargarlo de nuevo
+        if index is None:
+            # Cargar el índice desde el vector store existente
+            logger.info("Cargando índice vectorial...")
+            index = VectorStoreIndex.from_vector_store(
+                vector_store=vector_store,
+                embed_model=embed_model
+            )
 
         # Crear el motor de consulta (Query Engine) con retriever para obtener contexto
         query_engine = index.as_query_engine(similarity_top_k=config.SIMILARITY_TOP_K)
