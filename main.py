@@ -32,6 +32,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Cargar variables de entorno desde el archivo .env
+# IMPORTANTE: Esto debe ejecutarse ANTES de importar módulos que usan variables de entorno
+load_dotenv()
+
 # Importar módulo de Stripe (opcional, solo si está configurado)
 try:
     from lib.stripe import get_stripe_price_id, is_valid_plan_code, get_plan_code_from_price_id, STRIPE_WEBHOOK_SECRET
@@ -47,9 +51,6 @@ except (ImportError, ValueError) as e:
     STRIPE_AVAILABLE = False
     STRIPE_WEBHOOK_SECRET = None
     logger.warning(f"⚠️ Stripe no está disponible: {e}")
-
-# Cargar variables de entorno desde el archivo .env
-load_dotenv()
 
 # Función para obtener variables de entorno manejando BOM y comillas
 def get_env(key):
