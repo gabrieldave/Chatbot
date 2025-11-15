@@ -381,8 +381,9 @@ if RAG_AVAILABLE:
 else:
     logger.info("Sistema RAG deshabilitado (SUPABASE_DB_PASSWORD no configurado)")
 
-# Inicializar cliente de Supabase para autenticación
-supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+# Inicializar cliente de Supabase para autenticación (usar URL REST)
+supabase_client = create_client(SUPABASE_REST_URL, SUPABASE_SERVICE_KEY)
+logger.info(f"✅ Cliente de Supabase inicializado con URL REST: {SUPABASE_REST_URL}")
 
 # Inicializar FastAPI
 app = FastAPI(title=config.API_TITLE, description=config.API_DESCRIPTION)
