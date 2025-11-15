@@ -45,7 +45,24 @@ load_dotenv()
 
 # Importar módulo de Stripe (opcional, solo si está configurado)
 try:
-    from lib.stripe import get_stripe_price_id, is_valid_plan_code, get_plan_code_from_price_id, STRIPE_WEBHOOK_SECRET
+    # Intentar importar desde lib.stripe
+    try:
+        from lib.stripe import get_stripe_price_id, is_valid_plan_code, get_plan_code_from_price_id, STRIPE_WEBHOOK_SECRET
+    except ImportError:
+        # Si falla, intentar importar directamente desde el directorio actual
+        import importlib.util
+        stripe_path = os.path.join(current_dir, "lib", "stripe.py")
+        if os.path.exists(stripe_path):
+            spec = importlib.util.spec_from_file_location("lib.stripe", stripe_path)
+            stripe_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(stripe_module)
+            get_stripe_price_id = stripe_module.get_stripe_price_id
+            is_valid_plan_code = stripe_module.is_valid_plan_code
+            get_plan_code_from_price_id = stripe_module.get_plan_code_from_price_id
+            STRIPE_WEBHOOK_SECRET = stripe_module.STRIPE_WEBHOOK_SECRET
+        else:
+            raise ImportError(f"No se encontró lib/stripe.py en {stripe_path}")
+    
     import stripe
     # Verificar que stripe.api_key esté configurado
     if hasattr(stripe, 'api_key') and stripe.api_key:
@@ -54,10 +71,11 @@ try:
     else:
         STRIPE_AVAILABLE = False
         logger.warning("⚠️ Stripe importado pero STRIPE_SECRET_KEY no está configurada")
-except (ImportError, ValueError) as e:
+except (ImportError, ValueError, Exception) as e:
     STRIPE_AVAILABLE = False
     STRIPE_WEBHOOK_SECRET = None
     logger.warning(f"⚠️ Stripe no está disponible: {e}")
+    logger.debug(f"Directorio actual: {current_dir}, sys.path: {sys.path}")
 
 # Función para obtener variables de entorno manejando BOM y comillas
 def get_env(key):
