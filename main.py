@@ -418,6 +418,7 @@ async def get_user(authorization: Optional[str] = Header(None)):
     Lanza HTTPException 401 si el token es inválido o no está presente.
     """
     if not authorization:
+        logger.warning("⚠️ get_user: No se recibió header Authorization")
         raise HTTPException(
             status_code=401,
             detail="Token de autorización requerido. Incluye 'Authorization: Bearer <token>' en los headers."
@@ -426,7 +427,14 @@ async def get_user(authorization: Optional[str] = Header(None)):
     # Extraer el token del header "Bearer <token>"
     try:
         token = authorization.replace("Bearer ", "").strip()
-    except:
+        if not token:
+            logger.warning("⚠️ get_user: Token vacío después de extraer 'Bearer '")
+            raise HTTPException(
+                status_code=401,
+                detail="Formato de token inválido. Usa 'Bearer <token>'"
+            )
+    except Exception as e:
+        logger.warning(f"⚠️ get_user: Error al extraer token: {e}")
         raise HTTPException(
             status_code=401,
             detail="Formato de token inválido. Usa 'Bearer <token>'"
@@ -434,17 +442,27 @@ async def get_user(authorization: Optional[str] = Header(None)):
     
     # Validar el token con Supabase
     try:
+        logger.debug(f"🔐 get_user: Validando token (primeros 20 chars: {token[:20]}...)")
         user_response = supabase_client.auth.get_user(token)
         if not user_response.user:
+            logger.warning("⚠️ get_user: user_response.user es None")
             raise HTTPException(
                 status_code=401,
                 detail="Token inválido o expirado"
             )
+        logger.debug(f"✅ get_user: Usuario validado: {user_response.user.email}")
         return user_response.user
+    except HTTPException:
+        raise
     except Exception as e:
+        error_msg = str(e)
+        logger.error(f"❌ get_user: Error al validar token con Supabase: {error_msg}")
+        # Log más detallado del error
+        if "Invalid API key" in error_msg or "Invalid URL" in error_msg:
+            logger.error(f"❌ Posible problema con configuración de Supabase: URL={SUPABASE_REST_URL[:50]}...")
         raise HTTPException(
             status_code=401,
-            detail=f"Error al validar token: {str(e)}"
+            detail=f"Error al validar token: {error_msg[:100]}"
         )
 
 # Modelo Pydantic para la entrada de consulta
