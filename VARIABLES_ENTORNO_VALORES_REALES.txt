@@ -1,0 +1,120 @@
+# ============================================================================
+# VARIABLES DE ENTORNO CON VALORES REALES CONFIGURADOS
+# ============================================================================
+# ⚠️ ARCHIVO INFORMATIVO - GUARDAR COMO REFERENCIA
+# ⚠️ NO SUBIR ESTE ARCHIVO A GIT (contiene información sensible)
+# ============================================================================
+
+# ============================================================================
+# 🔴 VARIABLES OBLIGATORIAS
+# ============================================================================
+
+# 1. SUPABASE
+SUPABASE_URL=https://eixvqedpyuybfywmdulg.supabase.co
+
+# ⚠️ NOTA: Esta key está parcialmente visible en los archivos, pero el final está truncado
+# Necesitas completarla con tu service_role key completa desde Supabase Dashboard
+# Formato completo: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpeHZxZWRweXV5YmZ5d21kdWxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODA1NzYwMCwiZXhwIjoyMDUzNjMzNjAwfQ.[COMPLETAR_CON_EL_RESTO_DE_LA_KEY]
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpeHZxZWRweXV5YmZ5d21kdWxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODA1NzYwMCwiZXhwIjoyMDUzNjMzNjAwfQ.tu_service_key_completo_aqui
+
+# 2. MODELO DE IA
+# Opción A: Deepseek (Recomendado - Configurado)
+DEEPSEEK_API_KEY=sk-113b676b0f8743438d47722440079739
+CHAT_MODEL=deepseek/deepseek-chat
+
+# Opción B: OpenAI (Alternativa - No configurado)
+# OPENAI_API_KEY=sk-proj-[TU_API_KEY_DE_OPENAI_AQUI]
+# CHAT_MODEL=gpt-3.5-turbo
+
+# 3. FRONTEND URL
+# Para desarrollo local:
+FRONTEND_URL=http://localhost:3000
+
+# Para producción (actualizar con tu URL real de Vercel):
+# FRONTEND_URL=https://codex-trader.vercel.app
+# O si tienes dominio personalizado:
+# FRONTEND_URL=https://codextrader.tech
+
+# 4. EMAIL SMTP - GMAIL
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=todossomostr4ders@gmail.com
+SMTP_PASS=kjhf biie tgrk wncz
+EMAIL_FROM=Codex Trader <todossomostr4ders@gmail.com>
+ADMIN_EMAIL=todossomostr4ders@gmail.com
+
+# ============================================================================
+# 🟡 VARIABLES OPCIONALES
+# ============================================================================
+
+# 5. RAG - Búsqueda en documentos (Opcional)
+# ⚠️ IMPORTANTE: Necesitas agregar tu contraseña de PostgreSQL de Supabase
+SUPABASE_DB_PASSWORD=[TU_CONTRASEÑA_DE_POSTGRES_AQUI]
+
+# 6. STRIPE - Pagos y suscripciones
+# Secret Key de Stripe (TEST - para producción usar sk_live_...)
+# ⚠️ IMPORTANTE: Reemplaza con tu clave real de Stripe
+STRIPE_SECRET_KEY=sk_test_[TU_STRIPE_SECRET_KEY_AQUI]
+
+# ⚠️ IMPORTANTE: Necesitas agregar tu webhook secret de Stripe
+# Se obtiene en: Stripe Dashboard > Developers > Webhooks > [Tu webhook] > Signing secret
+# Formato: whsec_...
+STRIPE_WEBHOOK_SECRET=[TU_WEBHOOK_SECRET_AQUI]
+
+# Price IDs de Stripe (valores reales configurados)
+STRIPE_PRICE_ID_EXPLORER=price_1STXp3G2B99hBCyaEUlT1dxZ
+STRIPE_PRICE_ID_TRADER=price_1STXqOG2B99hBCya333a5zac
+STRIPE_PRICE_ID_PRO=price_1STXqlG2B99hBCyaSmGIfMGu
+STRIPE_PRICE_ID_INSTITUCIONAL=price_1STXr0G2B99hBCyaVE2kQzYi
+
+# Cupón de descuento Fair Use
+STRIPE_FAIR_USE_COUPON_ID=z3OlKNN6
+
+# 7. MODELOS DE IA ADICIONALES (Opcional)
+# ⚠️ Solo si quieres usar estos modelos
+# ANTHROPIC_API_KEY=[TU_API_KEY_DE_ANTHROPIC]
+# GOOGLE_API_KEY=[TU_API_KEY_DE_GOOGLE]
+# COHERE_API_KEY=[TU_API_KEY_DE_COHERE]
+
+# ============================================================================
+# 🟢 VARIABLES AUTOMÁTICAS (Railway las proporciona)
+# ============================================================================
+# PORT=8000  (Railway lo asigna automáticamente)
+
+# ============================================================================
+# 📝 NOTAS IMPORTANTES
+# ============================================================================
+# 1. Valores ya configurados (reales y completos):
+#    - SUPABASE_URL: https://eixvqedpyuybfywmdulg.supabase.co
+#    - DEEPSEEK_API_KEY: sk-113b676b0f8743438d47722440079739
+#    - CHAT_MODEL: deepseek/deepseek-chat
+#    - SMTP_USER: todossomostr4ders@gmail.com
+#    - SMTP_PASS: kjhf biie tgrk wncz (App Password de Gmail)
+#    - EMAIL_FROM: Codex Trader <todossomostr4ders@gmail.com>
+#    - ADMIN_EMAIL: todossomostr4ders@gmail.com
+#    - STRIPE_SECRET_KEY: sk_test_[TU_STRIPE_SECRET_KEY_AQUI]
+#    - STRIPE_PRICE_ID_EXPLORER: price_1STXp3G2B99hBCyaEUlT1dxZ
+#    - STRIPE_PRICE_ID_TRADER: price_1STXqOG2B99hBCya333a5zac
+#    - STRIPE_PRICE_ID_PRO: price_1STXqlG2B99hBCyaSmGIfMGu
+#    - STRIPE_PRICE_ID_INSTITUCIONAL: price_1STXr0G2B99hBCyaVE2kQzYi
+#    - STRIPE_FAIR_USE_COUPON_ID: z3OlKNN6
+#
+# 2. Valores que necesitas completar (no encontrados en archivos):
+#    - SUPABASE_SERVICE_KEY: Completa con tu service_role key completa de Supabase
+#      (El inicio está en los archivos pero falta el final)
+#    - SUPABASE_DB_PASSWORD: Agrega tu contraseña de PostgreSQL (opcional, solo para RAG)
+#    - STRIPE_WEBHOOK_SECRET: Agrega tu webhook secret de Stripe (opcional, solo si usas Stripe)
+#    - FRONTEND_URL: Actualiza con tu URL de producción cuando despliegues el frontend
+#
+# 3. Para Railway:
+#    - NO uses comillas en los valores
+#    - Los nombres son case-sensitive (mayúsculas/minúsculas importan)
+#    - Después de agregar variables, Railway reiniciará automáticamente
+#
+# 4. Seguridad:
+#    - Este archivo contiene información sensible
+#    - NO lo subas a Git
+#    - Guárdalo en un lugar seguro
+#    - Compártelo solo con personas de confianza
+# ============================================================================
+

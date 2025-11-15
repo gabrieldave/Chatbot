@@ -137,8 +137,16 @@ def _derive_rest_url_from_db(db_url: str) -> str:
     if not db_url:
         raise ValueError("SUPABASE_DB_URL is empty, cannot derive REST URL")
     
+    # Validar que sea una URL válida antes de parsear
+    if not db_url.startswith(("postgresql://", "postgres://")):
+        raise ValueError(f"SUPABASE_DB_URL debe empezar con 'postgresql://' o 'postgres://'. Recibido: {db_url[:50]}...")
+    
     from urllib.parse import urlparse
-    parsed = urlparse(db_url)
+    try:
+        parsed = urlparse(db_url)
+    except Exception as e:
+        raise ValueError(f"Error al parsear SUPABASE_DB_URL: {e}. URL recibida: {db_url[:100]}")
+    
     host = parsed.hostname or ""
     username = parsed.username or ""
     
@@ -173,32 +181,60 @@ def _derive_rest_url_from_db(db_url: str) -> str:
     return f"https://{host}"
 
 # Intentar obtener URL REST de Supabase
+# PRIORIDAD: 1) SUPABASE_REST_URL, 2) SUPABASE_URL (si es REST), 3) SUPABASE_DB_URL, 4) SUPABASE_URL (si es Postgres)
 SUPABASE_REST_URL_ENV = get_env("SUPABASE_REST_URL")
-SUPABASE_DB_URL = get_env("SUPABASE_DB_URL")
-# También intentar desde SUPABASE_URL por compatibilidad (puede ser Postgres URL)
 SUPABASE_URL_LEGACY = get_env("SUPABASE_URL")
+SUPABASE_DB_URL = get_env("SUPABASE_DB_URL")
 
 if SUPABASE_REST_URL_ENV:
     SUPABASE_REST_URL = SUPABASE_REST_URL_ENV
     logger.info(f"✅ Usando SUPABASE_REST_URL: {SUPABASE_REST_URL}")
-elif SUPABASE_DB_URL:
-    SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_DB_URL)
-    logger.info(f"✅ URL REST derivada desde SUPABASE_DB_URL: {SUPABASE_REST_URL}")
 elif SUPABASE_URL_LEGACY and SUPABASE_URL_LEGACY.startswith("https://"):
-    # Si SUPABASE_URL es una URL REST válida (compatibilidad hacia atrás)
+    # Si SUPABASE_URL es una URL REST válida (prioridad sobre DB_URL)
     SUPABASE_REST_URL = SUPABASE_URL_LEGACY
     logger.info(f"✅ Usando SUPABASE_URL (URL REST): {SUPABASE_REST_URL}")
+elif SUPABASE_DB_URL:
+    try:
+        SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_DB_URL)
+        logger.info(f"✅ URL REST derivada desde SUPABASE_DB_URL: {SUPABASE_REST_URL}")
+    except Exception as e:
+        logger.error(f"❌ Error al derivar URL REST desde SUPABASE_DB_URL: {e}")
+        # Intentar usar SUPABASE_URL si está disponible
+        if SUPABASE_URL_LEGACY and SUPABASE_URL_LEGACY.startswith("postgresql://"):
+            try:
+                SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_URL_LEGACY)
+                logger.info(f"✅ URL REST derivada desde SUPABASE_URL (Postgres): {SUPABASE_REST_URL}")
+            except Exception as e2:
+                raise RuntimeError(
+                    f"No se pudo determinar la URL REST de Supabase. "
+                    f"Error con SUPABASE_DB_URL: {e}. "
+                    f"Error con SUPABASE_URL: {e2}. "
+                    "Configura SUPABASE_URL con formato: https://xxx.supabase.co"
+                )
+        else:
+            raise RuntimeError(
+                f"No se pudo determinar la URL REST de Supabase. "
+                f"Error: {e}. "
+                "Configura SUPABASE_URL con formato: https://xxx.supabase.co"
+            )
 elif SUPABASE_URL_LEGACY and SUPABASE_URL_LEGACY.startswith("postgresql://"):
     # Si SUPABASE_URL es una URL de Postgres, derivar desde ahí
-    SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_URL_LEGACY)
-    logger.info(f"✅ URL REST derivada desde SUPABASE_URL (Postgres): {SUPABASE_REST_URL}")
+    try:
+        SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_URL_LEGACY)
+        logger.info(f"✅ URL REST derivada desde SUPABASE_URL (Postgres): {SUPABASE_REST_URL}")
+    except Exception as e:
+        raise RuntimeError(
+            f"No se pudo determinar la URL REST de Supabase. "
+            f"Error al parsear SUPABASE_URL: {e}. "
+            "Configura SUPABASE_URL con formato: https://xxx.supabase.co"
+        )
 else:
     raise RuntimeError(
         "No se pudo determinar la URL REST de Supabase. "
         "Configura una de estas variables:\n"
+        "  - SUPABASE_URL (URL REST directa, ej: https://xxx.supabase.co) [RECOMENDADO]\n"
         "  - SUPABASE_REST_URL (URL REST directa, ej: https://xxx.supabase.co)\n"
         "  - SUPABASE_DB_URL (URL de Postgres, ej: postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres)\n"
-        "  - SUPABASE_URL (URL REST o Postgres, para compatibilidad)"
     )
 
 # Para RAG y otras funciones que necesitan el project_ref, derivarlo desde la URL REST

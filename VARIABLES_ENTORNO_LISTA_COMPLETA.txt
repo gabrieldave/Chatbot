@@ -1,0 +1,76 @@
+# ============================================================================
+# VARIABLES DE ENTORNO COMPLETAS PARA EL BACKEND
+# ============================================================================
+# Copia estas variables UNA POR UNA en Railway o en tu archivo .env
+# ============================================================================
+
+# ============================================================================
+# 🔴 VARIABLES OBLIGATORIAS (Sin estas, el backend NO funcionará)
+# ============================================================================
+
+# 1. SUPABASE
+SUPABASE_SERVICE_KEY=tu_service_key_aqui
+SUPABASE_URL=https://tu-proyecto.supabase.co
+
+# 2. MODELO DE IA (Elige UNA opción)
+# Opción A: Deepseek (Recomendado)
+DEEPSEEK_API_KEY=sk-tu_api_key_de_deepseek_aqui
+CHAT_MODEL=deepseek/deepseek-chat
+
+# Opción B: OpenAI (Alternativa)
+# OPENAI_API_KEY=sk-proj-tu_api_key_de_openai_aqui
+# CHAT_MODEL=gpt-3.5-turbo
+
+# 3. FRONTEND URL
+FRONTEND_URL=http://localhost:3000
+
+# 4. EMAIL SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu_email@gmail.com
+SMTP_PASS=tu_app_password_de_gmail_aqui
+EMAIL_FROM=Codex Trader <tu_email@gmail.com>
+ADMIN_EMAIL=tu_email@gmail.com
+
+# ============================================================================
+# 🟡 VARIABLES OPCIONALES (Funcionalidades adicionales)
+# ============================================================================
+
+# 5. RAG - Búsqueda en documentos (Opcional)
+SUPABASE_DB_PASSWORD=tu_contraseña_de_postgres_aqui
+
+# 6. STRIPE - Pagos y suscripciones (Opcional - Solo si usas Stripe)
+STRIPE_SECRET_KEY=sk_live_tu_secret_key_aqui
+STRIPE_WEBHOOK_SECRET=whsec_tu_webhook_secret_aqui
+STRIPE_PRICE_ID_EXPLORER=price_tu_price_id_explorer
+STRIPE_PRICE_ID_TRADER=price_tu_price_id_trader
+STRIPE_PRICE_ID_PRO=price_tu_price_id_pro
+STRIPE_PRICE_ID_INSTITUCIONAL=price_tu_price_id_institucional
+STRIPE_FAIR_USE_COUPON_ID=FAIR_USE_20
+
+# 7. MODELOS DE IA ADICIONALES (Opcional)
+ANTHROPIC_API_KEY=tu_api_key_de_anthropic
+GOOGLE_API_KEY=tu_api_key_de_google
+COHERE_API_KEY=tu_api_key_de_cohere
+
+# ============================================================================
+# 🟢 VARIABLES AUTOMÁTICAS (No necesitas configurarlas)
+# ============================================================================
+# PORT=8000  (Railway lo proporciona automáticamente)
+
+# ============================================================================
+# NOTAS IMPORTANTES
+# ============================================================================
+# 1. Variables obligatorias mínimas:
+#    - SUPABASE_SERVICE_KEY
+#    - SUPABASE_URL (o SUPABASE_REST_URL o SUPABASE_DB_URL)
+#    - DEEPSEEK_API_KEY o OPENAI_API_KEY (al menos una)
+#    - FRONTEND_URL
+#    - SMTP_HOST, SMTP_USER, SMTP_PASS, EMAIL_FROM, ADMIN_EMAIL
+#
+# 2. Para Railway: NO uses comillas en los valores
+# 3. Los nombres son case-sensitive (mayúsculas/minúsculas importan)
+# 4. Para SMTP_PASS: usa una "App Password" de Gmail, NO la contraseña normal
+# 5. Para SUPABASE_SERVICE_KEY: usa la "service_role" key, NO la "anon" key
+# ============================================================================
+

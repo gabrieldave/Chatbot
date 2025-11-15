@@ -1,0 +1,68 @@
+# ============================================================================
+# VARIABLES DE ENTORNO PARA RENDER - CODEX TRADER BACKEND
+# ============================================================================
+# Copia estas variables UNA POR UNA en Render Dashboard
+# Ve a: Tu Servicio → Environment → Add Environment Variable
+# ============================================================================
+
+# ============================================================================
+# 🔴 VARIABLES OBLIGATORIAS
+# ============================================================================
+
+# 1. SUPABASE
+# ⚠️ IMPORTANTE: 
+# - Debe terminar en .supabase.co (NO .com)
+# - Debe empezar con https://
+# - Formato: https://[project_ref].supabase.co
+# - NO configures SUPABASE_DB_URL si usas esta variable
+SUPABASE_URL=https://eixvqedpyuybfywmdulg.supabase.co
+
+# ⚠️ IMPORTANTE: Esta es la service_role key (NO la anon key)
+# Debe estar completa (no truncada). Encuéntrala en:
+# Supabase Dashboard → Settings → API → service_role key
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpeHZxZWRweXV5YmZ5d21kdWxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczODA1NzYwMCwiZXhwIjoyMDUzNjMzNjAwfQ.tu_service_key_completo_aqui
+
+# 2. MODELO DE IA
+DEEPSEEK_API_KEY=sk-113b676b0f8743438d47722440079739
+CHAT_MODEL=deepseek/deepseek-chat
+
+# 3. FRONTEND URL
+FRONTEND_URL=http://localhost:3000
+
+# 4. EMAIL SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=todossomostr4ders@gmail.com
+SMTP_PASS=kjhf biie tgrk wncz
+EMAIL_FROM=Codex Trader <todossomostr4ders@gmail.com>
+ADMIN_EMAIL=todossomostr4ders@gmail.com
+
+# ============================================================================
+# 🟡 VARIABLES OPCIONALES
+# ============================================================================
+
+# 5. RAG - Búsqueda en documentos (Opcional)
+SUPABASE_DB_PASSWORD=tu_contraseña_de_postgres_aqui
+
+# 6. STRIPE - Pagos y suscripciones (Opcional)
+# ⚠️ IMPORTANTE: Reemplaza con tu clave real de Stripe
+STRIPE_SECRET_KEY=sk_test_[TU_STRIPE_SECRET_KEY_AQUI]
+STRIPE_WEBHOOK_SECRET=whsec_tu_webhook_secret_aqui
+STRIPE_PRICE_ID_EXPLORER=price_1STXp3G2B99hBCyaEUlT1dxZ
+STRIPE_PRICE_ID_TRADER=price_1STXqOG2B99hBCya333a5zac
+STRIPE_PRICE_ID_PRO=price_1STXqlG2B99hBCyaSmGIfMGu
+STRIPE_PRICE_ID_INSTITUCIONAL=price_1STXr0G2B99hBCyaVE2kQzYi
+STRIPE_FAIR_USE_COUPON_ID=z3OlKNN6
+
+# ============================================================================
+# 🟢 VARIABLES AUTOMÁTICAS (Render las proporciona)
+# ============================================================================
+# PORT=10000  (Render lo asigna automáticamente, NO necesitas configurarla)
+
+# ============================================================================
+# 📝 CONFIGURACIÓN EN RENDER
+# ============================================================================
+# Build Command: pip install -r requirements.txt
+# Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
+# ============================================================================
+
