@@ -195,13 +195,15 @@ if RAG_AVAILABLE:
         # Definir el modelo de embedding de OpenAI (mismo que en ingest.py)
         embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
-        # Construir la cadena de conexión completa (mismo método que en ingest.py)
+        # Construir la cadena de conexión completa
+        # Intentar primero con connection pooling (más compatible con Railway y evita problemas IPv6)
         encoded_password = quote_plus(SUPABASE_DB_PASSWORD)
-        postgres_connection_string = f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres"
-
-        # Inicializar el vector store apuntando a la colección existente
-        # Agregar timeout y mejor manejo de errores
-        logger.info(f"Conectando a Supabase database: db.{project_ref}.supabase.co")
+        
+        # Opción 1: Connection pooling (recomendado para Railway)
+        # Usar el pooler de Supabase que es más compatible con diferentes redes
+        postgres_connection_string = f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
+        
+        logger.info(f"Conectando a Supabase usando connection pooling...")
         vector_store = SupabaseVectorStore(
             postgres_connection_string=postgres_connection_string,
             collection_name=config.VECTOR_COLLECTION_NAME
