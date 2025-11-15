@@ -215,16 +215,17 @@ if RAG_AVAILABLE:
         # Railway puede tener problemas con IPv6, intentar múltiples métodos
         encoded_password = quote_plus(SUPABASE_DB_PASSWORD)
         
-        # Intentar primero con connection pooling (más compatible con Railway)
-        # Formato: postgresql://postgres.[project_ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
-        # Para encontrar la región correcta, verificar en Supabase Dashboard → Settings → Database → Connection pooling
+        # Intentar múltiples métodos de conexión
+        # IMPORTANTE: Railway puede usar IPv4, pero Supabase Dedicated Pooler requiere IPv6
+        # Por eso intentamos conexión directa PRIMERO (compatible con IPv4)
         connection_strings = [
-            # Opción 1: Connection pooling (si está habilitado en Supabase)
-            f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
-            # Opción 2: Connection pooling región alternativa
-            f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
-            # Opción 3: Conexión directa (puede fallar en Railway por IPv6)
+            # Opción 1: Conexión directa (compatible con IPv4, más confiable)
             f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres",
+            # Opción 2: Connection pooling Shared (si está habilitado, compatible con IPv4)
+            # Nota: Dedicated Pooler NO es compatible con IPv4
+            f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+            # Opción 3: Connection pooling región alternativa
+            f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
         ]
         
         vector_store = None
