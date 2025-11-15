@@ -267,8 +267,8 @@ if RAG_AVAILABLE:
         logger.info("Iniciando motor del chat...")
         logger.info(f"Modelo de IA configurado: {modelo_por_defecto}")
 
-        # Extraer el project_ref de la URL de Supabase
-        project_ref = SUPABASE_URL.replace("https://", "").replace(".supabase.co", "")
+        # Usar el project_ref derivado desde la URL REST
+        project_ref = SUPABASE_PROJECT_REF
 
         # Definir el modelo de embedding de OpenAI (mismo que en ingest.py)
         embed_model = OpenAIEmbedding(model="text-embedding-3-small")

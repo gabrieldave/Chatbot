@@ -12,14 +12,59 @@ from supabase import create_client
 load_dotenv()
 
 # Configurar cliente de Supabase (se inicializará cuando se necesite)
-SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+
+def _derive_rest_url_from_db(db_url: str) -> str:
+    """
+    Deriva la URL REST de Supabase desde una URL de conexión a la base de datos.
+    
+    Acepta algo como:
+    postgresql://postgres:pass@db.eixvqedpyuybfywmdulg.supabase.co:5432/postgres
+    
+    y devuelve:
+    https://eixvqedpyuybfywmdulg.supabase.co
+    """
+    if not db_url:
+        raise ValueError("SUPABASE_DB_URL is empty, cannot derive REST URL")
+    
+    from urllib.parse import urlparse
+    parsed = urlparse(db_url)
+    host = parsed.hostname or ""
+    
+    # host típico: db.eixvqedpyuybfywmdulg.supabase.co
+    if host.startswith("db."):
+        host = host[3:]  # Remover prefijo "db."
+    
+    if not host:
+        raise ValueError(f"No se pudo extraer el hostname de SUPABASE_DB_URL: {db_url}")
+    
+    return f"https://{host}"
 
 def get_supabase_client():
     """Obtiene el cliente de Supabase, inicializándolo si es necesario."""
-    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-        raise ValueError("SUPABASE_URL y SUPABASE_SERVICE_KEY deben estar configurados en .env")
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    if not SUPABASE_SERVICE_KEY:
+        raise ValueError("SUPABASE_SERVICE_KEY debe estar configurado en .env")
+    
+    # Intentar obtener URL REST de Supabase
+    SUPABASE_REST_URL_ENV = os.getenv("SUPABASE_REST_URL")
+    SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
+    SUPABASE_URL_LEGACY = os.getenv("SUPABASE_URL")
+    
+    if SUPABASE_REST_URL_ENV:
+        SUPABASE_REST_URL = SUPABASE_REST_URL_ENV
+    elif SUPABASE_DB_URL:
+        SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_DB_URL)
+    elif SUPABASE_URL_LEGACY and SUPABASE_URL_LEGACY.startswith("https://"):
+        SUPABASE_REST_URL = SUPABASE_URL_LEGACY
+    elif SUPABASE_URL_LEGACY and SUPABASE_URL_LEGACY.startswith("postgresql://"):
+        SUPABASE_REST_URL = _derive_rest_url_from_db(SUPABASE_URL_LEGACY)
+    else:
+        raise ValueError(
+            "No se pudo determinar la URL REST de Supabase. "
+            "Configura SUPABASE_REST_URL o SUPABASE_DB_URL en .env"
+        )
+    
+    return create_client(SUPABASE_REST_URL, SUPABASE_SERVICE_KEY)
 
 
 def get_cost_summary_data(from_date: str, to_date: str) -> Dict[str, Any]:
