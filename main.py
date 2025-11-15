@@ -1343,20 +1343,29 @@ async def create_checkout_session(
         from lib.stripe import STRIPE_FAIR_USE_COUPON_ID
         
         if STRIPE_FAIR_USE_COUPON_ID:
-            # Obtener información del perfil del usuario
-            profile_response = supabase_client.table("profiles").select(
-                "fair_use_discount_eligible, fair_use_discount_used"
-            ).eq("id", user_id).execute()
-            
-            if profile_response.data:
-                profile = profile_response.data[0]
-                fair_use_eligible = profile.get("fair_use_discount_eligible", False)
-                fair_use_used = profile.get("fair_use_discount_used", False)
+            try:
+                # Intentar obtener información del perfil del usuario con columnas de fair use
+                profile_response = supabase_client.table("profiles").select(
+                    "fair_use_discount_eligible, fair_use_discount_used"
+                ).eq("id", user_id).execute()
                 
-                # Aplicar cupón si es elegible y aún no lo ha usado
-                if fair_use_eligible and not fair_use_used:
-                    discounts = [{"coupon": STRIPE_FAIR_USE_COUPON_ID}]
-                    print(f"✅ Aplicando cupón de uso justo (20% OFF) para usuario {user_id}")
+                if profile_response.data:
+                    profile = profile_response.data[0]
+                    fair_use_eligible = profile.get("fair_use_discount_eligible", False)
+                    fair_use_used = profile.get("fair_use_discount_used", False)
+                    
+                    # Aplicar cupón si es elegible y aún no lo ha usado
+                    if fair_use_eligible and not fair_use_used:
+                        discounts = [{"coupon": STRIPE_FAIR_USE_COUPON_ID}]
+                        logger.info(f"✅ Aplicando cupón de uso justo (20% OFF) para usuario {user_id}")
+            except Exception as e:
+                # Si las columnas no existen, simplemente no aplicar descuento
+                error_msg = str(e)
+                if "does not exist" in error_msg or "42703" in error_msg:
+                    logger.warning(f"⚠️ Columnas de fair use no disponibles, omitiendo descuento: {error_msg[:100]}")
+                else:
+                    logger.warning(f"⚠️ Error al verificar elegibilidad de fair use: {error_msg[:100]}")
+                # Continuar sin descuento
         
         metadata = {
             "user_id": user_id,
