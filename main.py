@@ -212,15 +212,42 @@ if RAG_AVAILABLE:
         embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
         # Construir la cadena de conexión completa
-        # Usar conexión directa (más confiable que connection pooling)
+        # Railway puede tener problemas con IPv6, intentar múltiples métodos
         encoded_password = quote_plus(SUPABASE_DB_PASSWORD)
-        postgres_connection_string = f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres"
         
-        logger.info(f"Conectando a Supabase database: db.{project_ref}.supabase.co:5432")
-        vector_store = SupabaseVectorStore(
-            postgres_connection_string=postgres_connection_string,
-            collection_name=config.VECTOR_COLLECTION_NAME
-        )
+        # Intentar primero con connection pooling (más compatible con Railway)
+        # Formato: postgresql://postgres.[project_ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+        # Para encontrar la región correcta, verificar en Supabase Dashboard → Settings → Database → Connection pooling
+        connection_strings = [
+            # Opción 1: Connection pooling (si está habilitado en Supabase)
+            f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+            # Opción 2: Connection pooling región alternativa
+            f"postgresql://postgres.{project_ref}:{encoded_password}@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
+            # Opción 3: Conexión directa (puede fallar en Railway por IPv6)
+            f"postgresql://postgres:{encoded_password}@db.{project_ref}.supabase.co:5432/postgres",
+        ]
+        
+        vector_store = None
+        last_error = None
+        
+        for i, conn_str in enumerate(connection_strings, 1):
+            try:
+                logger.info(f"Intentando conexión {i}/{len(connection_strings)}: {conn_str.split('@')[1] if '@' in conn_str else 'N/A'}")
+                vector_store = SupabaseVectorStore(
+                    postgres_connection_string=conn_str,
+                    collection_name=config.VECTOR_COLLECTION_NAME
+                )
+                # Intentar una operación simple para verificar la conexión
+                logger.info(f"✅ Conexión exitosa con método {i}")
+                postgres_connection_string = conn_str
+                break
+            except Exception as e:
+                last_error = e
+                logger.warning(f"⚠️ Método {i} falló: {str(e)[:100]}")
+                continue
+        
+        if vector_store is None:
+            raise Exception(f"No se pudo conectar a Supabase con ningún método. Último error: {last_error}")
 
         # Cargar el índice desde el vector store existente
         logger.info("Cargando índice vectorial...")
