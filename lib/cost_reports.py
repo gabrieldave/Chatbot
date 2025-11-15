@@ -30,10 +30,32 @@ def _derive_rest_url_from_db(db_url: str) -> str:
     from urllib.parse import urlparse
     parsed = urlparse(db_url)
     host = parsed.hostname or ""
+    username = parsed.username or ""
     
-    # host típico: db.eixvqedpyuybfywmdulg.supabase.co
+    # Caso 1: URL de pooler (ej: aws-0-us-west-1.pooler.supabase.com)
+    # En este caso, el project_ref está en el username (formato: postgres.xxx)
+    if "pooler.supabase.com" in host or "pooler.supabase.co" in host:
+        if username and username.startswith("postgres."):
+            # Extraer project_ref del username: postgres.xxx -> xxx
+            project_ref = username.replace("postgres.", "")
+            if project_ref:
+                return f"https://{project_ref}.supabase.co"
+        raise ValueError(
+            f"No se pudo extraer project_ref desde username en URL de pooler. "
+            f"Username esperado: 'postgres.xxx', recibido: '{username}'. "
+            f"URL completa: {db_url[:100]}"
+        )
+    
+    # Caso 2: Conexión directa (ej: db.xxx.supabase.co)
     if host.startswith("db."):
         host = host[3:]  # Remover prefijo "db."
+    
+    # Verificar que el host termine en .supabase.co (no .com)
+    if not host.endswith(".supabase.co"):
+        raise ValueError(
+            f"Hostname no es válido para URL REST de Supabase: {host}. "
+            f"URL completa: {db_url[:100]}"
+        )
     
     if not host:
         raise ValueError(f"No se pudo extraer el hostname de SUPABASE_DB_URL: {db_url}")
